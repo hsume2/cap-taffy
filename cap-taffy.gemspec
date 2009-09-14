@@ -7,12 +7,10 @@ Gem::Specification.new do |s|
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Henry Hsu"]
   s.date = %q{2009-09-14}
-  s.default_executable = %q{cap-taffy}
   s.description = %q{Capistrano recipes for deploying databases and other common tasks.}
   s.email = %q{henry@qlane.com}
-  s.executables = ["cap-taffy"]
-  s.extra_rdoc_files = ["History.txt", "bin/cap-taffy"]
-  s.files = ["History.txt", "README.md", "Rakefile", "bin/cap-taffy", "cap-taffy.gemspec", "lib/cap-taffy.rb", "lib/cap-taffy/db.rb", "lib/cap-taffy/parse.rb", "spec/cap-taffy/db_spec.rb", "spec/cap-taffy/parse_spec.rb", "spec/cap-taffy_spec.rb", "spec/spec.opts", "spec/spec_helper.rb"]
+  s.extra_rdoc_files = ["History.txt"]
+  s.files = ["History.txt", "README.md", "Rakefile", "cap-taffy.gemspec", "lib/cap-taffy.rb", "lib/cap-taffy/db.rb", "lib/cap-taffy/parse.rb", "spec/cap-taffy/db_spec.rb", "spec/cap-taffy/parse_spec.rb", "spec/cap-taffy_spec.rb", "spec/spec.opts", "spec/spec_helper.rb"]
   s.homepage = %q{http://by.qlane.com}
   s.rdoc_options = ["--main", "README.md"]
   s.require_paths = ["lib"]

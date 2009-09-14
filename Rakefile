@@ -30,3 +30,4 @@ PROJ.description = "Capistrano recipes for deploying databases and other common 
 PROJ.summary = "Capistrano recipes for deploying databases (managing database.yml, importing/exporting/transfering databases, etc.)"
 PROJ.ignore_file = '.gitignore'
 PROJ.spec.opts << '--color'
+PROJ.exclude << "bin"
