@@ -13,6 +13,8 @@ module CapTaffy
       attr_accessor :instance
 
       # Modified from :parse_database_yml in heroku/command/db.rb
+      #
+      # Accepts a complete +db_config+ hash and +env+ and parses for a database_url accordingly.
       def database_url(db_config, env)
         raise Invalid, "please pass me a valid Hash loaded from a database YAML file" unless db_config
         conf = db_config[env]
@@ -33,17 +35,19 @@ module CapTaffy
       end
     end
 
-    def initialize
+    # Override to do nothing on #new
+    def initialize # :nodoc:
 
     end
 
-    # Do nothing
+    # Override to pass-through on #escape
     def escape(string)
       string
     end
 
     public :uri_hash_to_url, :conf_to_uri_hash
 
-    class Invalid < RuntimeError; end
+    class Invalid < RuntimeError # :nodoc:
+    end
   end
 end

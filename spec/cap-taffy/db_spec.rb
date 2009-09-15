@@ -22,64 +22,69 @@ module CapTaffy
         load 'lib/cap-taffy/db.rb'
       end
 
-      for_task :detect, :roles => :app, :it => "should be defined" do
-        @db_mod.expects(:remote).returns("remote_db_url")
-        @db_mod.expects(:local).returns("local_db_url")
+      for_task :detect, :roles => :app, :in => :Db, :it => "should be defined" do
+        @mod.expects(:remote_database_url).returns("remote_db_url")
+        @mod.expects(:local_database_url).returns("local_db_url")
         
         load 'lib/cap-taffy/db.rb'
         
-        @namespace_db.instance_variable_get(:@remote_database_url).should == "remote_db_url"
-        @namespace_db.instance_variable_get(:@local_database_url).should == "local_db_url"
+        @namespace.instance_variable_get(:@remote_database_url).should == "remote_db_url"
+        @namespace.instance_variable_get(:@local_database_url).should == "local_db_url"
       end
 
-      for_task :push, :roles => :app, :it => "should send taps client cmd_send" do
+      def load_taffy_db # :nodoc:
+        with_logger do
+          load 'lib/cap-taffy/db.rb'
+        end
+      end
+
+      for_task :push, :roles => :app, :in => :Db, :it => "should send taps client cmd_send" do
         options = {:remote_database_url => "remote", :local_database_url => "local", :port => nil, :login => "a_user", :password => "a_pass"}
-        @namespace_db.expects(:detect)
+        @namespace.expects(:detect)
         namespace_with_variables(:taps_port => nil)
-        namespace_with_expected_options(options)
+        db_with_expected_options(options)
+        @mod.expects(:tmp_pass).with(@namespace.fetch(:user)).returns(options[:password])
+        @mod.expects(:run).with(@namespace, options).yields(taps_client_who(:expects, :cmd_send))
 
-        @db_mod.expects(:tmp_pass).with(@namespace_db.fetch(:user)).returns(options[:password])
-        @db_mod.expects(:run).with(@namespace_db, options).yields(taps_client_who(:expects, :cmd_send))
-
-        load_taffy
+        load_taffy_db
       end
 
-      for_task :push, :roles => :app, :it => "should use cli argument for port" do
+      for_task :push, :roles => :app, :in => :Db, :it => "should use cli argument for port" do
         options = {:remote_database_url => "remote", :local_database_url => "local", :port => 1234, :login => "a_user", :password => "a_pass"}
-        @namespace_db.expects(:detect)
+        @namespace.expects(:detect)
         namespace_with_variables(:taps_port => 1234)
-        namespace_with_expected_options(options)
-        @db_mod.expects(:tmp_pass).with(@namespace_db.fetch(:user)).returns(options[:password])
-        @db_mod.expects(:run).with(@namespace_db, options)
+        db_with_expected_options(options)
+        @mod.expects(:tmp_pass).with(@namespace.fetch(:user)).returns(options[:password])
+        @mod.expects(:run).with(@namespace, options)
 
-        load_taffy
+        load_taffy_db
       end
 
-      for_task :push, :roles => :app, :it => "should force 127.0.0.1 (local) for ssh local forwarding" do
+      for_task :push, :roles => :app, :in => :Db, :it => "should force 127.0.0.1 (local) for ssh local forwarding" do
         options = {:remote_database_url => "remote", :local_database_url => "local", :port => 1234, :login => "a_user", :password => "a_pass"}
-        @namespace_db.expects(:detect)
+        @namespace.expects(:detect)
         namespace_with_variables(:taps_port => 1234, :local => true)
-        namespace_with_expected_options(options)
-        @db_mod.expects(:tmp_pass).with(@namespace_db.fetch(:user)).returns(options[:password])
-        @db_mod.expects(:run).with(@namespace_db, options.merge(:local => true))
+        db_with_expected_options(options)
+        @mod.expects(:tmp_pass).with(@namespace.fetch(:user)).returns(options[:password])
+        @mod.expects(:run).with(@namespace, options.merge(:local => true))
 
-        load_taffy
+        load_taffy_db
       end
       
-      for_task :pull, :roles => :app, :it => "should send taps client cmd_receive" do
+      for_task :pull, :roles => :app, :in => :Db, :it => "should send taps client cmd_receive" do
         options = {:remote_database_url => "remote", :local_database_url => "local", :port => nil, :login => "a_user", :password => "a_pass"}
-        @namespace_db.expects(:detect)
+        @namespace.expects(:detect)
         namespace_with_variables(:taps_port => nil)
-        namespace_with_expected_options(options)
+        db_with_expected_options(options)
+        @mod.expects(:tmp_pass).with(@namespace.fetch(:user)).returns(options[:password])
+        @mod.expects(:run).with(@namespace, options).yields(taps_client_who(:expects, :cmd_receive))
 
-        @db_mod.expects(:tmp_pass).with(@namespace_db.fetch(:user)).returns(options[:password])
-        @db_mod.expects(:run).with(@namespace_db, options).yields(taps_client_who(:expects, :cmd_receive))
-
-        load_taffy
+        load_taffy_db
       end
     end
 
     context "after capistrano" do
+      include CapistranoHelpers
       include TaffyHelpers
 
       before do
@@ -107,7 +112,7 @@ module CapTaffy
         env = 'test'
         Parse.expects(:database_url).with(@conf, env)
 
-        Db.local(env)
+        Db.local_database_url(env)
       end
 
       it "should detect remote database url" do
@@ -118,7 +123,7 @@ module CapTaffy
         env = 'test'
         Parse.expects(:database_url).with(@conf, env)
 
-        Db.remote(instance, env)
+        Db.remote_database_url(instance, env)
       end
 
       it "should create temporary password from time and user" do
@@ -174,12 +179,12 @@ module CapTaffy
         parser = mock()
         Parse.expects(:new).at_least_once.returns(parser)
         parser.expects(:uri_hash_to_url).
-          with('username' => login, 'password' => password, 'host' => host, 'scheme' => 'http', 'path' => '').returns("remote_url")
+          with('username' => login, 'password' => password, 'host' => host, 'scheme' => 'http', 'path' => '')
       end
 
       it "should build remote url (with some help)" do
         @options[:host] = "127.0.0.1"        
-        parser_expects_uri_hash_to_url_with(@options[:login], @options[:password], "#{@options[:host]}:#{Db.default_server_port}")
+        parser_expects_uri_hash_to_url_with(@options[:login], @options[:password], "#{@options[:host]}:#{Db.default_server_port}").returns("remote_url/")
 
         Db.remote_url(@options)
       end
@@ -187,7 +192,7 @@ module CapTaffy
       it "should build remote url with different port" do
         @options[:host] = "127.0.0.1"
         @options[:port] = 1234
-        parser_expects_uri_hash_to_url_with(@options[:login], @options[:password], "#{@options[:host]}:#{@options[:port]}")
+        parser_expects_uri_hash_to_url_with(@options[:login], @options[:password], "#{@options[:host]}:#{@options[:port]}").returns("remote_url")
 
         Db.remote_url(@options)
       end
@@ -199,15 +204,15 @@ module CapTaffy
         Db.remote_url(@options).should == "remote_url"
       end
 
-      running_taffy_it "should run with capistrano" do
-        run_capistrano_with(Db.server_command(@options))
+      running_db_it "should run with capistrano" do
+        capistrano_run_with(Db.server_command(@options))
 
         Db.run(@capistrano, @options)
       end
 
-      running_taffy_it "should do something to taps client" do
+      running_db_it "should do something to taps client" do
         channel, stream, data = simulating_run_loop_with :data => ">> Listening on 0.0.0.0:5000, CTRL+C to stop\r\n" do
-          run_capistrano_with(Db.server_command(@options))
+          capistrano_run_with(Db.server_command(@options))
         end
         channel.expects(:close)
 
@@ -220,11 +225,11 @@ module CapTaffy
         channel[:status].should == 0
       end
 
-      running_taffy_it "should run taffy on different port" do
+      running_db_it "should run taffy on different port" do
         @options[:port] = 1234
 
         channel, stream, data = simulating_run_loop_with :data => ">> Listening on 0.0.0.0:1234, CTRL+C to stop\r\n" do
-          run_capistrano_with(Db.server_command(@options))
+          capistrano_run_with(Db.server_command(@options))
         end
         channel.expects(:close)
         Db.expects(:remote_url).with(@options.merge(:host => channel[:host])).returns("remote_url")
@@ -237,9 +242,9 @@ module CapTaffy
         channel[:status].should == 0
       end
 
-      running_taffy_it "should not do anything until taps sinatra server is running" do
+      running_db_it "should not do anything until taps sinatra server is running" do
         simulating_run_loop_with :data => "asdfasdf" do
-          run_capistrano_with(Db.server_command(@options))
+          capistrano_run_with(Db.server_command(@options))
         end
 
         client = mock()
@@ -250,7 +255,7 @@ module CapTaffy
         end
 
         channel, stream, data = simulating_run_loop_with :data => ">> Listening on 0.0.0.0:5000, CTRL+C to stop\r\n" do
-          run_capistrano_with(Db.server_command(@options))
+          capistrano_run_with(Db.server_command(@options))
         end
         channel.expects(:close)
         Db.expects(:remote_url).with(@options.merge(:host => channel[:host], :port => 5000)).returns("remote_url")
@@ -263,9 +268,9 @@ module CapTaffy
         channel[:status].should == 0
       end
 
-      running_taffy_it "should force 127.0.0.1 (local) for remote url" do
+      running_db_it "should force 127.0.0.1 (local) for remote url" do
         channel, stream, data = simulating_run_loop_with :data => ">> Listening on 0.0.0.0:5000, CTRL+C to stop\r\n" do
-          run_capistrano_with(Db.server_command(@options))
+          capistrano_run_with(Db.server_command(@options))
         end
         channel.expects(:close)
 

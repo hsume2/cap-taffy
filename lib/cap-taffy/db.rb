@@ -12,24 +12,42 @@ require 'digest/sha1'
 module CapTaffy::Db
   extend self
 
-  def local(env)
+  # Detects the local database url for +env+.
+  #
+  # Looks for <tt>config/database.yml</tt>.
+  def local_database_url(env)
     return "" unless File.exists?(Dir.pwd + '/config/database.yml')
     db_config = YAML.load(File.read(Dir.pwd + '/config/database.yml'))
 
     CapTaffy::Parse.database_url(db_config, env)
   end
 
-  def remote(instance, env)
+  # Detects the remote database url for +env+ and the current Capistrano +instance+.
+  #
+  # Looks for <tt>config/database.yml</tt> in the +current_path+.
+  def remote_database_url(instance, env)
     db_yml = instance.capture "cat #{instance.current_path}/config/database.yml"
     db_config = YAML::load(db_yml)
 
     CapTaffy::Parse.database_url(db_config, env)
   end
 
+  # The default server port the Taps server is started on.
   def default_server_port
     5000
   end
 
+  # Generates the remote url used by Taps push/pull.
+  #
+  # ==== Parameters
+  # 
+  # * <tt>:login, :password, :host, :port</tt> - See #run.
+  #
+  # ==== Examples
+  #
+  #   login = fetch(:user)
+  #   password = tmp_pass(login)                                               # returns asdkf239udjhdaks (for example)
+  #   remote_url(:login => login, :password => password, :host => 'load-test') # returns http://henry:asdkf239udjhdaks@load-test:5000
   def remote_url(options={})
     host = options[:host]
     port = options[:port] || default_server_port
@@ -39,11 +57,15 @@ module CapTaffy::Db
     url.sub(/\/$/, '')
   end
 
+  # Generates a temporary password to be used for the Taps server command.
   def tmp_pass(user)
     Digest::SHA1.hexdigest("--#{Time.now.to_s}--#{user}--")
   end
 
-  def taps_client(local_database_url, remote_url, &blk)
+  # A quick start for a Taps client.
+  #
+  # <tt>local_database_url</tt> and <tt>remote_url</tt> refer to the options for the Taps gem (see #run).
+  def taps_client(local_database_url, remote_url, &blk) # :yields: client
     Taps::Config.chunksize = 1000
     Taps::Config.database_url = local_database_url
     Taps::Config.remote_url = remote_url
@@ -54,7 +76,11 @@ module CapTaffy::Db
     end
   end
 
-  # server <local_database_url> <login> <password> [--port=N]
+  # Generates the server command used to start a Taps server
+  #
+  # ==== Parameters
+  # * <tt>:remote_database_url, :login, :password</tt> - See #run.
+  # * <tt>:port</tt> - The +port+ the Taps server is on. If given and different from #default_server_port, appends <tt>--port=[port]</tt> to command.
   def server_command(options={})
     remote_database_url, login, password, port = options[:remote_database_url], options[:login], options[:password], options[:port]
     port_argument = ''
@@ -63,7 +89,37 @@ module CapTaffy::Db
     "taps server #{remote_database_url} #{login} #{password}#{port_argument}"
   end
 
-  def run(instance, options = {} , &blk)
+  # The meat of the operation. Runs operations after setting up the Taps server.
+  # 
+  # 1. Runs the <tt>taps</tt> taps command to start the Taps server (assuming Sinatra is running on Thin)
+  # 2. Wait until the server is ready 
+  # 3. Execute block on Taps client
+  # 4. Close the connection(s) and bid farewell.
+  #
+  # ==== Parameters
+  # * <tt>:remote_database_url</tt> - Refers to local database url in the options for the Taps server command (see Taps Options).
+  # * <tt>:login</tt> - The login for +host+. Usually what's in <tt>set :user, "the user"</tt> in <tt>deploy.rb</tt>
+  # * <tt>:password</tt> - The temporary password for the Taps server.
+  # * <tt>:port</tt> - The +port+ the Taps server is on. If not given, defaults to #default_server_port.
+  # * <tt>:local_database_url</tt> - Refers to the local database url in the options for Taps client commands (see Taps Options).
+  #
+  # ==== Taps Options
+  #
+  # <tt>taps</tt>
+  #   server <local_database_url> <login> <password> [--port=N]        Start a taps database import/export server
+  #   pull <local_database_url> <remote_url> [--chunksize=N]           Pull a database from a taps server
+  #   push <local_database_url> <remote_url> [--chunksize=N]           Push a database to a taps server
+  #
+  # ==== Examples
+  #
+  #   task :push do
+  #     login = fetch(:user)
+  #     password = Time.now.to_s
+  #     CapTaffy.Db.run(self, { :login => login, :password => password, :remote_database_url => "sqlite://test_production", :local_database_url => "sqlite://test_development" }) do |client|
+  #       client.cmd_send
+  #     end
+  #   end
+  def run(instance, options = {} , &blk) # :yields: client
     options[:port] ||= default_server_port
     remote_database_url, login, password, port, local_database_url = options[:remote_database_url], options[:login], options[:password], options[:port], options[:local_database_url]
     force_local = options.delete(:local)
@@ -86,12 +142,16 @@ module CapTaffy::Db
     end
   end
 
-  class InvalidURL < RuntimeError; end
+  class InvalidURL < RuntimeError # :nodoc:
+  end
 end
 
 Capistrano::Configuration.instance.load do
   namespace :db do
-    def dry_run_safe(returning = nil, &block)
+    # Executes given block.
+    # If this is a dry run, any raised exceptions will be caught and +returning+ is returned.
+    # If this is not a dry run, any exceptions will be raised as expected.
+    def dry_run_safe(returning = nil, &block) # :yields:
       begin
         yield
       rescue Exception => e
@@ -101,8 +161,8 @@ Capistrano::Configuration.instance.load do
     end
 
     task :detect, :roles => :app do
-      @remote_database_url = dry_run_safe('') { CapTaffy::Db.remote(self, 'production') }
-      @local_database_url = dry_run_safe('') { CapTaffy::Db.local('development') }
+      @remote_database_url = dry_run_safe('') { CapTaffy::Db.remote_database_url(self, 'production') }
+      @local_database_url = dry_run_safe('') { CapTaffy::Db.local_database_url('development') }
     end
 
     desc <<-DESC

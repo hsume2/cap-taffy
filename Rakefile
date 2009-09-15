@@ -26,6 +26,7 @@ PROJ.version = CapTaffy::VERSION
 PROJ.rubyforge.name = 'cap-taffy'
 PROJ.readme_file = "README.md"
 PROJ.gem.dependencies = ['heroku', 'taps', 'capistrano']
+PROJ.gem.development_dependencies << ["mocha"]
 PROJ.description = "Capistrano recipes for deploying databases and other common tasks."
 PROJ.summary = "Capistrano recipes for deploying databases (managing database.yml, importing/exporting/transfering databases, etc.)"
 PROJ.ignore_file = '.gitignore'
