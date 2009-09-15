@@ -20,8 +20,17 @@ module CapTaffy
       load 'lib/cap-taffy/ssh.rb'
     end
 
-    for_task :authorize, :in => :SSH, :it => "should capture the authorized_keys" do
-      @namespace.expects(:capture).with("cat ~/.ssh/authorized_keys")
+    def simulating_line(line, &blk)
+      blk.call.then.yields(line)
+      line
+    end
+
+    for_task :authorize, :in => :SSH, :it => "should authorize on each server" do
+      public_key = "ssh-key2\n"
+      File.expects(:read).with(File.expand_path(File.join(%w[~/ .ssh id_rsa.pub]))).returns(public_key)
+
+      run_with(@namespace, anything) # Don't rly wna test bash scripts
+
       load 'lib/cap-taffy/ssh.rb'
     end
   end

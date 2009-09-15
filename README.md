@@ -7,6 +7,7 @@ Features
 ------------------------------------------------
 
 * Adds database transfer recipes (via [`Taps`]("http://github.com/ricardochimal/taps"))
+* Authorize SSH access
 * Manage `database.yml` (Soon.)
 
 [`Taps`]("http://github.com/ricardochimal/taps") is great, but having to SSH into my deployment to run the `Taps` server, as well as 
@@ -20,10 +21,8 @@ Installation
 
     gem install cap-taffy
 
-Usage
+Database Transfer
 ------------------------------------------------
-
-### `Taffy`: Database Transfer
 
 > _Dependency:_ The [`Taps`]("http://github.com/ricardochimal/taps") gem is required on any server(s) you'll be transferring databases to (`:app` role) including your development machine (where you'll be running `cap` tasks from). Run:
 
@@ -32,6 +31,8 @@ Usage
 > _Dependency:_ The [`Heroku`]("http://github.com/heroku/heroku") gem is required on your development machine.
 
 >     gem install heroku
+
+### Usage
 
 To start, add the following to your `Capfile`
 
@@ -58,7 +59,22 @@ Then you can use:
 > >     ssh -N -L4321:127.0.0.1:4321 henry@load-test
 > >     cap db:push -s taps_port=4321 -s local=true
 
-### Managing `database.yml`
+SSH Access
+------------------------------------------------
+
+#### Usage
+
+Add the following to your `Capfile`
+
+    require 'cap-taffy/ssh'
+
+Using a public key generated from `ssh-keygen` (e.g. `ssh-keygen -t rsa`), to authorize access:
+
+    cap ssh:authorize       # authorizes local public key for SSH access to remote server(s)
+
+
+Managing `database.yml`
+------------------------------------------------
 
 > Much needed and coming soon.
 

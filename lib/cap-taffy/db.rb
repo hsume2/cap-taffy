@@ -6,6 +6,7 @@ rescue LoadError
   error "Install the Taps gem to use db commands. On most systems this will be:\nsudo gem install taps"
 end
 
+require File.join(File.dirname(__FILE__), %w[.. cap-taffy]) unless defined?(CapTaffy)
 require File.join(File.dirname(__FILE__), 'parse')
 require 'digest/sha1'
 
