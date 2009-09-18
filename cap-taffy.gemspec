@@ -2,11 +2,11 @@
 
 Gem::Specification.new do |s|
   s.name = %q{cap-taffy}
-  s.version = "1.0.1"
+  s.version = "0.0.2"
 
   s.required_rubygems_version = Gem::Requirement.new(">= 0") if s.respond_to? :required_rubygems_version=
   s.authors = ["Henry Hsu"]
-  s.date = %q{2009-09-14}
+  s.date = %q{2009-09-17}
   s.description = %q{Capistrano recipes for deploying databases and other common tasks.}
   s.email = %q{henry@qlane.com}
   s.extra_rdoc_files = ["History.txt"]

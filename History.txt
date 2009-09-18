@@ -1,8 +1,8 @@
-== 1.0.1 / 2009-09-14
+== 0.0.2 / 2009-09-14
 * 1 minor enhancement
   * Added authorizing SSH public keys on remote server(s).
 
-== 1.0.0 / 2009-09-14
+== 0.0.1 / 2009-09-14
 
 * 1 major enhancement
   * Initial release.
