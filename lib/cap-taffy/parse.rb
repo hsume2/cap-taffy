@@ -4,7 +4,7 @@ begin
   require 'heroku/commands/base'
   require 'heroku/commands/db'
 rescue LoadError
-  error "Install the Heroku gem. On most systems this will be:\nsudo gem install taps"
+  error "Install the Heroku gem. On most systems this will be:\nsudo gem install heroku"
 end
 
 module CapTaffy

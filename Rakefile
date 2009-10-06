@@ -32,3 +32,4 @@ PROJ.summary = "Capistrano recipes for deploying databases (managing database.ym
 PROJ.ignore_file = '.gitignore'
 PROJ.spec.opts << '--color'
 PROJ.exclude << "bin"
+PROJ.rcov.opts << IO.readlines("spec/rcov.opts").map {|l| l.chomp.split " "}.flatten

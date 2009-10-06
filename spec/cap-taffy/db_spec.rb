@@ -32,6 +32,25 @@ module CapTaffy
         @namespace.instance_variable_get(:@local_database_url).should == "local_db_url"
       end
 
+      for_task :detect, :roles => :app, :in => :Db, :it => "should be safe if dry run" do
+        @mod.expects(:remote_database_url).raises Exception
+        @mod.expects(:local_database_url).raises Exception
+        @namespace.stubs(:dry_run).returns(true)
+
+        load 'lib/cap-taffy/db.rb'
+
+        @namespace.instance_variable_get(:@remote_database_url).should == ""
+        @namespace.instance_variable_get(:@local_database_url).should == ""
+      end
+
+      for_task :detect, :roles => :app, :in => :Db, :it => "should raise as usual if not dry run" do
+        class SpecialError < StandardError; end
+        @mod.expects(:remote_database_url).raises SpecialError
+        @namespace.stubs(:dry_run).returns(false)
+
+        lambda { load 'lib/cap-taffy/db.rb' }.should raise_error(SpecialError)
+      end
+
       def load_taffy_db # :nodoc:
         with_logger do
           load 'lib/cap-taffy/db.rb'
@@ -83,7 +102,7 @@ module CapTaffy
       end
     end
 
-    context "after capistrano" do
+    context "after capistrano loaded" do
       include CapistranoHelpers
       include TaffyHelpers
 
