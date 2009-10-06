@@ -1,4 +1,3 @@
-p self
 require 'rubygems'
 begin
   gem 'taps', '>= 0.2.8', '< 0.3.0'
