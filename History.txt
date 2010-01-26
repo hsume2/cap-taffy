@@ -1,3 +1,7 @@
+== 0.0.3 / 2010-01-26
+* 1 major fix
+  * Fixed for Heroku 1.6.3
+
 == 0.0.2 / 2009-09-14
 * 1 minor enhancement
   * Added authorizing SSH public keys on remote server(s).

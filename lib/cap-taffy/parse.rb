@@ -1,6 +1,7 @@
 require 'rubygems'
 begin
   require 'heroku'
+  require 'heroku/command'
   require 'heroku/commands/base'
   require 'heroku/commands/db'
 rescue LoadError
